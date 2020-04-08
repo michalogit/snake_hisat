@@ -26,5 +26,19 @@ GTF="/cluster/home/michalo/project_michalo/hg38/Homo_sapiens.GRCh38.99.gtf"
 ```
 
 
+
 ## TO DO:
 Remove calls to software modules. If you want to use it locally, the software from the workflow: trimmomatic, hisat, etc, needs to be installed locally
+
+
+## Running
+
+### dry run
+
+snakemake -np
+
+### normal run
+
+snakemake -p
+
+
