@@ -13,7 +13,7 @@ eg
 GENOME="/cluster/home/michalo/project_michalo/hisat/grch38/genome"
 ```
 
-# get the GTF
+## get the GTF
 ```bash
 wget ftp://ftp.ensembl.org/pub/release-99/gtf/homo_sapiens/Homo_sapiens.GRCh38.99.gtf.gz
 gunzip Homo_sapiens.GRCh38.99.gtf.gz
@@ -26,5 +26,5 @@ GTF="/cluster/home/michalo/project_michalo/hg38/Homo_sapiens.GRCh38.99.gtf"
 ```
 
 
-TO DO:
+## TO DO:
 Remove calls to software modules. If you want to use it locally, the software from the workflow: trimmomatic, hisat, etc, needs to be installed locally
