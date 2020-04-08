@@ -33,6 +33,9 @@ Remove calls to software modules. If you want to use it locally, the software fr
 
 ## Running
 
+Create a run directory, where you place: Snakefile, adapters.fa and fastq.gz files in "data" subdirectory. 
+Do the updates to the Snakefile as above: location of genome index and GTF annotation, then:
+
 ### dry run
 
 snakemake -np
