@@ -29,8 +29,12 @@ GTF="/cluster/home/michalo/project_michalo/hg38/Homo_sapiens.GRCh38.99.gtf"
 
 
 
-## TO DO:
-Remove calls to software modules. If you want to use it locally, the software from the workflow: trimmomatic, hisat, etc, needs to be installed locally
+## Software required:
+If you want to use it locally, the software from the workflow: trimmomatic, hisat, subread, samtools need to be installed locally and made runnable from command line
+
+## Adapting
+The paths to genome, GTF and adapters need to be set in the python constants in the Snakefile
+If needed, also paths to the software commands and trimmomatic jar. Recommended is to have them in the executable or java paths, eg with setting the environment value. 
 
 
 ## Running
