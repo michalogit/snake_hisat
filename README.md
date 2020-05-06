@@ -3,9 +3,11 @@
 Workflow for RNAseq, using hisat2 aligner 
 
 ## get the hisat index for human
+```bash
 wget https://cloud.biohpc.swmed.edu/index.php/s/grch38/download
 mv download grch39.tar.gz
 tar -xvzf grch39.tar.gz
+```
 
 ## link the location in the Snakefile
 eg
