@@ -50,4 +50,7 @@ snakemake -np
 
 snakemake -p
 
+### run on the cluster
+
+snakemake -p -j 999 --cluster-config cluster.json --cluster "bsub -W {cluster.time} -n {cluster.n}"
 
