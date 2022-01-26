@@ -33,11 +33,14 @@ print(SAMPLES)
 
 
 
+localrules: all, summary_bai,  summary_string,  summary_bai, summary_cuff
+
+
 
 rule all:
     input:
         "secondary_analysis/counts.csv",
-#        "secondary_analysis/final_marker_bai.txt",
+        "secondary_analysis/final_marker_bai.txt",
         "secondary_analysis/final_marker_string.txt"
 #        "secondary_analysis/final_marker_cuff.txt"
 
@@ -86,7 +89,7 @@ rule samtools_sort:
         "sorted_reads/{sample}.bam"
     shell:
         "module load samtools \n"
-        "samtools sort -T sorted_reads/{wildcards.sample} "
+        "samtools sort -@ 24 -T sorted_reads/{wildcards.sample} "
         "-O bam {input} > {output}"
 
 rule samtools_index:

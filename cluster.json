@@ -1,0 +1,27 @@
+{
+    "__default__" :
+    {
+        "time" : "03:55",
+        "n" : 24
+    },
+    "trim" :
+    {
+        "n" : 1
+    },
+    "samtools_convert" :
+    {
+        "n" : 1
+    },
+    "samtools_index" :
+    {
+        "n" : 1
+    },
+    "cufflinks" :
+    {
+        "n" : 1
+    },
+    "create_count_table" :
+    {
+        "n" : 1
+    }
+}
