@@ -53,10 +53,13 @@ snakemake -p
 ### run on the cluster
 
 #### LSF
+```bash
 snakemake -p -j 999 --cluster-config cluster.json --cluster "bsub -W {cluster.time} -n {cluster.n}"
+```
 
-#### SLURM - change times in cluster.json to HH:MM:SS
+#### SLURM
+```bash
+# change times in cluster.json to HH:MM:SS
 snakemake -p -j 999 --cluster-config cluster.json --cluster "sbatch --time {cluster.time} -n {cluster.n}"
-
 snakemake -p -j 999 --cluster-config cluster.json --cluster "sbatch --time {cluster.time} -n 1 --cpus-per-task={cluster.n}"
-
+```
