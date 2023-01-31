@@ -1,0 +1,189 @@
+#from snakemake.utils import R
+#import rpy2
+import glob 
+import os
+import logging
+
+## running command
+#
+# snakemake -p -j 999 --use-singularity --cluster-config cluster.json \
+#  --cluster "sbatch --time {cluster.time} -n 1 --cpus-per-task={cluster.n}" \
+#   --singularity-args "--bind /cluster/scratch/michalo/Anthony_RNA/:/mnt2 --bind /cluster/home/michalo/project_michalo/hisat/grch38/:/genomes --bind /cluster/home/michalo/project_michalo/hg38/:/annots"
+#    
+#
+
+# Globals ---------------------------------------------------------------------
+
+shellcommand="mkdir data"
+os.system(shellcommand)
+shellcommand="mkdir trimmed_data"
+os.system(shellcommand)
+shellcommand="mkdir mapped_reads"
+os.system(shellcommand)
+shellcommand="mkdir sorted_reads"
+os.system(shellcommand)
+shellcommand="mkdir stringtie"
+os.system(shellcommand)
+shellcommand="mkdir secondary_analysis"
+os.system(shellcommand)
+
+#using Index https://cloud.biohpc.swmed.edu/index.php/s/grch38/download 
+#GENOME="/cluster/home/michalo/project_michalo/hisat/grch38/genome"
+GENOME="genome"
+#GTF="/cluster/home/michalo/project_michalo/hg38/Homo_sapiens.GRCh38.107.gtf"
+GTF="Homo_sapiens.GRCh38.107.gtf"
+TRIMFILE="adapters.fa"
+CORES="24"
+
+
+SAMPLES, = glob_wildcards("data/{sample}.fastq.gz")
+print(SAMPLES)
+
+
+
+localrules: all, summary_bai,  summary_string,  summary_bai, summary_cuff
+
+
+
+rule all:
+    input:
+        "secondary_analysis/counts.csv",
+        "secondary_analysis/final_marker_bai.txt"
+#        "secondary_analysis/final_marker_string.txt"
+
+
+rule trim:
+    input:
+        "data/{sample}.fastq.gz"
+    output:
+        "trimmed_data/{sample}.fastq.gz"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/trimmomatic:0.39--1"
+    shell:
+        "trimmomatic SE -phred33 {input} {output} ILLUMINACLIP:"+TRIMFILE+":2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36"
+
+
+### rule hisat_map assumes parameters of singularity, passed to snakemake
+# --singularity-args "--bind /cluster/scratch/michalo/Anthony_RNA/:/mnt2 --bind /cluster/home/michalo/project_michalo/hisat/grch38/:/genomes"
+#
+#
+
+rule hisat_map:
+    input:
+        "trimmed_data/{sample}.fastq.gz"
+    output:
+        "mapped_reads/{sample}.sam"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/hisat2:2.1.0--py37hc9558a2_4"
+#       "https://depot.galaxyproject.org/singularity/hisat2:2.2.1--he1b5a44_2"
+    shell:
+        "hisat2  -q -p "+CORES+" -x /genomes/"+GENOME+" -U /mnt2/trimmed_data/{input} -S /mnt2/mapped_reads/{wildcards.sample}.sam "
+
+
+rule samtools_convert:
+    input:
+        "mapped_reads/{sample}.sam"
+    output:
+        "mapped_reads/{sample}.bam"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/samtools:1.9--h91753b0_8"
+    shell:
+        "samtools view -@ "+CORES+" -bS {input} > {output} "
+
+rule samtools_sort:
+    input:
+        "mapped_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/samtools:1.9--h91753b0_8"
+    shell:
+        "samtools sort -@ 24 -T sorted_reads/{wildcards.sample} -O bam {input} > {output}"
+
+#rule picard_sort:
+#    input:
+#        "mapped_reads/{sample}.bam"
+#    output:
+#        "sorted_reads/{sample}.bam"
+#    log:
+#        "sorted_reads/{sample}.log",
+#    singularity:
+#        "https://depot.galaxyproject.org/singularity/picard-slim:2.26.11--hdfd78af_0"
+#    shell:
+#        "picard SortSam -I {input} -O {output} -SORT_ORDER 'coordinate' &> {log}"
+
+
+rule samtools_index:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam.bai"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/samtools:1.9--h91753b0_8"
+    shell:
+        "samtools index {input}"
+
+rule summary_bai:
+    input:
+        expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES)
+    output:
+        "secondary_analysis/final_marker_bai.txt"
+    shell:
+        "touch secondary_analysis/final_marker_bai.txt"
+
+rule stringtie:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "stringtie/{sample}.gtf"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/stringtie:2.2.1--hecb563c_2"
+    shell:
+        "stringtie --rf -o {output} -p 24 {input}"
+
+rule summary_string:
+    input:
+        expand("stringtie/{sample}.gtf", sample=SAMPLES)
+    output:
+        "secondary_analysis/final_marker_string.txt"
+    shell:
+        "touch secondary_analysis/final_marker_string.txt"
+
+
+
+
+rule count_in_genes:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "secondary_analysis/{sample}.cnt"
+    singularity:
+        "https://depot.galaxyproject.org/singularity/subread:2.0.3--h7132678_0"
+    shell:
+        "featureCounts -M -f --fraction -s 2 -T 24 -t gene -g gene_id -a /annots/"+GTF+" -o {output} {input}"
+
+
+rule create_count_table:
+    input:
+        expand("secondary_analysis/{sample}.cnt", sample = SAMPLES)
+    output:
+        "secondary_analysis/counts.csv"
+    run:
+        import pandas
+        import glob
+
+        filez = glob.glob('secondary_analysis/*.cnt')
+        t1 = pandas.read_table(filez[1], header=1)
+        tout = t1.iloc[:,0]
+        for f in filez:
+           t1=pandas.read_table(f, header=1)
+           tout=pandas.concat([tout, t1.iloc[:,6]], axis=1)
+           print(f)
+
+        tout.to_csv('secondary_analysis/counts.csv')
+
+         
+
+
+
+
