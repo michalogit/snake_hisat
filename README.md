@@ -52,6 +52,11 @@ snakemake -p
 
 ### run on the cluster
 
+Make the snakemake available in the cluster environment, eg
+```bash
+module load gcc/8.2.0 python/3.10.4
+```
+
 #### LSF
 ```bash
 snakemake -p -j 999 --cluster-config cluster.json --cluster "bsub -W {cluster.time} -n {cluster.n}"
