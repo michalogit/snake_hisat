@@ -68,3 +68,16 @@ snakemake -p -j 999 --cluster-config cluster.json --cluster "bsub -W {cluster.ti
 snakemake -p -j 999 --cluster-config cluster.json --cluster "sbatch --time {cluster.time} -n {cluster.n}"
 snakemake -p -j 999 --cluster-config cluster.json --cluster "sbatch --time {cluster.time} -n 1 --cpus-per-task={cluster.n}"
 ```
+#### SLURM with containers
+
+Running the workflow with the containers from [Galaxy software stack](https://depot.galaxyproject.org/singularity/)
+requires passing the external folders as singularity parameters to the snakemake. 
+The containers will be loaded into .snakemake folder. 
+
+```bash
+ snakemake -p -j 999 --use-singularity --cluster-config cluster.json \
+  --cluster "sbatch --time {cluster.time} -n 1 --cpus-per-task={cluster.n}" \
+  --singularity-args "--bind /cluster/scratch/michalo/Anthony_RNA/:/mnt2 --bind /cluster/home/michalo/project_michalo/hisat/grch38/:/genomes --bind /cluster/home/michalo/project_michalo/hg38/:/annots"
+``` 
+
+
