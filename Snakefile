@@ -52,8 +52,8 @@ rule trim:
         "trimmed_data/{sample}.fastq.gz"
     run:
         shell(
-        'module load gdc \n'+
-        'module load java \n'+
+#        'module load gdc \n'+
+#        'module load java \n'+
         'module load trimmomatic \n'+
         'echo {input} \n'+
         'trimmomatic SE -phred33 {input} {output} ILLUMINACLIP:'+TRIMFILE+':2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36'
@@ -67,7 +67,8 @@ rule hisat_map:
         "mapped_reads/{sample}.sam"
     run:
         shell(
-        'module load gcc/4.8.2 gdc python/2.7.11 hisat2/2.1.0 \n'+
+#        'module load gcc/4.8.2 gdc python/2.7.11 hisat2/2.1.0 \n'+
+        'module load hisat2/2.1.0 \n'+
         'echo {input} \n'+
         'hisat2  -q -p '+CORES+'-x '+GENOME+' -U {input} -S mapped_reads/{wildcards.sample}.sam \n')
 
