@@ -78,7 +78,7 @@ The containers will be loaded into .snakemake folder.
 ```bash
  snakemake -p -j 999 --use-singularity --cluster-config cluster.json \
   --cluster "sbatch --time {cluster.time} -n 1 --cpus-per-task={cluster.n}" \
-  --singularity-args "--bind /cluster/scratch/michalo/Anthony_RNA/:/mnt2 --bind /cluster/home/michalo/project_michalo/hisat/grch38/:/genomes --bind /cluster/home/michalo/project_michalo/hg38/:/annots"
+  --singularity-args "--bind /cluster/scratch/username/runfolder/:/mnt2 --bind /cluster/home/michalo/project_michalo/hisat/grch38/:/genomes --bind /cluster/home/michalo/project_michalo/hg38/:/annots"
 ``` 
 
 
