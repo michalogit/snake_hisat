@@ -103,7 +103,7 @@ Then pick the right snakefile to run
 ```bash
 cp Snakemake Snakemake_old
 cp Snakefile_v8_stackMar25 Snakemake
-snakemake --profile simple/ -np
-snakemake --profile simple/ 
+snakemake --profile simple_profile/ -np
+snakemake --profile simple_profile/ 
 ``` 
 
