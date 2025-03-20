@@ -81,4 +81,29 @@ The containers will be loaded into .snakemake folder.
   --singularity-args "--bind /cluster/scratch/username/runfolder/:/mnt2 --bind /cluster/home/michalo/project_michalo/hisat/grch38/:/genomes --bind /cluster/home/michalo/project_michalo/hg38/:/annots"
 ``` 
 
+### Snakemake version 8 and 9
+
+Use the snakemake 8 or 9, eg by installing the environment
+
+```bash
+module load  stack/2024-06  gcc/12.2.0 python/3.11.6
+VENV=/cluster/project/sis/cdss/michalo/venv2
+python -m venv $VENV
+source $VENV/bin/activate
+#python -m pip install --upgrade pip
+pip install snakemake 
+pip install pandas
+pip install snakemake-executor-plugin-cluster-generic
+
+VENV=/cluster/project/sis/cdss/michalo/venv2
+source $VENV/bin/activate
+```
+Then pick the right snakefile to run
+
+```bash
+cp Snakemake Snakemake_old
+cp Snakefile_v8_stackMar25 Snakemake
+snakemake --profile simple/ -np
+snakemake --profile simple/ 
+``` 
 
