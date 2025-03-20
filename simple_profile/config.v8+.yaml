@@ -1,0 +1,15 @@
+executor: cluster-generic
+cluster-generic-submit-cmd:
+      sbatch
+          --cpus-per-task={resources.cpus_per_task}
+          --mem-per-cpu={resources.mem_mb_per_cpu}
+          --time={resources.runtime}
+          --job-name=smk-{rule}-{wildcards}
+          --parsable
+default-resources:
+        runtime: 180 # 1 hour
+        mem_mb_per_cpu: 2400
+        cpus_per_task: 24
+
+jobs: 100
+

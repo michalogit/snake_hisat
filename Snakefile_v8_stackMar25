@@ -1,0 +1,184 @@
+#from snakemake.utils import R
+#import rpy2
+import glob 
+import os
+import logging
+
+# Globals ---------------------------------------------------------------------
+
+shellcommand="mkdir data"
+os.system(shellcommand)
+shellcommand="mkdir trimmed_data"
+os.system(shellcommand)
+shellcommand="mkdir mapped_reads"
+os.system(shellcommand)
+shellcommand="mkdir sorted_reads"
+os.system(shellcommand)
+shellcommand="mkdir cufflinks"
+os.system(shellcommand)
+shellcommand="mkdir stringtie"
+os.system(shellcommand)
+shellcommand="mkdir secondary_analysis"
+os.system(shellcommand)
+
+#using Index https://cloud.biohpc.swmed.edu/index.php/s/grch38/download 
+GENOME="/cluster/scratch/michalo/grch38/genome"
+GTF="/cluster/scratch/michalo/grch38/Mus_musculus.GRCm39.111.gtf"
+TRIMFILE="adapters.fa"
+CORES="24"
+
+
+SAMPLES, = glob_wildcards("data/{sample}.fastq.gz")
+print(SAMPLES)
+
+
+
+#localrules: all, summary_bai,  summary_string,  summary_bai, summary_cuff
+localrules: all, summary_bai, create_count_table
+
+
+
+rule all:
+    input:
+        "secondary_analysis/counts.csv",
+        "secondary_analysis/final_marker_bai.txt"
+#        "secondary_analysis/final_marker_string.txt"
+#        "secondary_analysis/final_marker_cuff.txt"
+
+
+rule trim:
+    input:
+        "data/{sample}.fastq.gz"
+    output:
+        "trimmed_data/{sample}.fastq.gz"
+    resources:
+        runtime=180,  # Runtime in minutes
+        mem_mb_per_cpu=2400,
+        cpus_per_task=1
+    threads: 1
+    run:
+        shell(
+#        'module load gdc \n'+
+#        'module load java \n'+
+        'module load stack/2024-05  gcc/13.2.0 \n'
+        'module load trimmomatic/0.39 \n'+
+        'echo {input} \n'+
+        'trimmomatic SE -phred33 {input} {output} ILLUMINACLIP:'+TRIMFILE+':2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36'
+        )
+
+
+rule hisat_map:
+    input:
+        "trimmed_data/{sample}.fastq.gz"
+    output:
+        "mapped_reads/{sample}.sam"
+    resources:
+        runtime=180,  # Runtime in minutes
+        mem_mb_per_cpu=2400,
+        cpus_per_task=24
+    threads: 24
+    run:
+        shell(
+        'module load stack/2024-06  gcc/12.2.0 \n'+
+        'module load hisat2/2.2.1-gcym2nc \n'+
+        'echo {input} \n'+
+        'hisat2  -q -p '+CORES+'-x '+GENOME+' -U {input} -S mapped_reads/{wildcards.sample}.sam \n')
+
+
+rule samtools_convert:
+    input:
+        "mapped_reads/{sample}.sam"
+    output:
+        "mapped_reads/{sample}.bam"
+    resources:
+        runtime=180,  # Runtime in minutes
+        mem_mb_per_cpu=2400,
+        cpus_per_task=24
+    threads: 24
+    run:
+        shell(
+        'module load stack/2024-06  gcc/12.2.0 \n'+
+        'module load samtools/1.17 \n'+
+        'samtools view -@ '+CORES+' -bS {input} > {output} ')
+
+rule samtools_sort:
+    input:
+        "mapped_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam"
+    resources:
+        runtime=180,  # Runtime in minutes
+        mem_mb_per_cpu=2400,
+        cpus_per_task=24
+    threads: 24
+    shell:
+        "module load stack/2024-06  gcc/12.2.0 \n"
+        "module load samtools/1.17 \n"
+        "samtools sort -@ 24 -T sorted_reads/{wildcards.sample} "
+        "-O bam {input} > {output}"
+
+rule samtools_index:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "sorted_reads/{sample}.bam.bai"
+    resources:
+        runtime=180,  # Runtime in minutes
+        mem_mb_per_cpu=2400,
+        cpus_per_task=1
+    threads: 1
+    shell:
+        "module load stack/2024-06  gcc/12.2.0 \n"
+        "module load samtools/1.17 \n"
+        "samtools index {input}"
+
+rule summary_bai:
+    input:
+        expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES)
+    output:
+        "secondary_analysis/final_marker_bai.txt"
+    shell:
+        "touch secondary_analysis/final_marker_bai.txt"
+
+
+
+rule count_in_genes:
+    input:
+        "sorted_reads/{sample}.bam"
+    output:
+        "secondary_analysis/{sample}.cnt"
+    resources:
+        runtime=180,  # Runtime in minutes
+        mem_mb_per_cpu=2400,
+        cpus_per_task=24
+    threads: 24
+    shell:
+        "module load stack/2024-06  gcc/12.2.0 \n"
+        "module load subread/2.0.6 \n"
+        "featureCounts -M -f --fraction -s 2 -T 24 -t gene -g gene_id -a "+GTF+" -o {output} {input}"
+
+
+rule create_count_table:
+    input:
+        expand("secondary_analysis/{sample}.cnt", sample = SAMPLES)
+    output:
+        "secondary_analysis/counts.csv"
+    run:
+        import pandas
+        import glob
+
+        filez = glob.glob('secondary_analysis/*.cnt')
+        t1 = pandas.read_table(filez[1], header=1)
+        tout = t1.iloc[:,0]
+        for f in filez:
+           t1=pandas.read_table(f, header=1)
+           tout=pandas.concat([tout, t1.iloc[:,6]], axis=1)
+           print(f)
+
+        tout.to_csv('secondary_analysis/counts.csv')
+
+         
+
+
+
+
